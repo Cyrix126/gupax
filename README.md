@@ -78,7 +78,7 @@ Private information about your address on XMRvsBeast can be found here after the
 
 ## XvB Raffle Status
 
-Gupaxx add a new column **XvB Raffle** on the Status Tab in the Process submenu. It displays public statistics of XMRvsBeast, which are available [here](https://xmrvsbeast.com/p2pool) 
+Gupaxx add a new column **XvB Raffle** on the Status Tab in the Process submenu. It displays public statistics of XMRvsBeast, which are available [here](https://xmrvsbeast.com/p2pool).  
 It is refreshed every minute.
 This column will be active if the XvB process is started even partially, it doesn't need the token to be provided.
 
@@ -91,7 +91,7 @@ I will eventually (meaning when I'll have time) create pull requests for upstrea
 
 ## Troubleshooting
 
-If you have any issue, feel free to ask for support in the [xmrvsbeast matrix room](#xmrvsbeast:monero.social) or to open an issue in this repo. You can also contact me though [email](email:gupaxx@baermail.fr).
+If you have any issue, feel free to ask for support in the [xmrvsbeast matrix room](#xmrvsbeast:monero.social) or to open an issue in this repo. You can also contact me through [email](email:gupaxx@baermail.fr).
 
 ### Windows
 
