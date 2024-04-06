@@ -78,7 +78,7 @@ Private information about your address on XMRvsBeast can be found here after the
 
 ## XvB Raffle Status
 
-Gupaxx add a new column **XvB Raffle** on the Status Tab in the Process submenu. It displays public statistics of XMRvsBeast, which are available here 
+Gupaxx add a new column **XvB Raffle** on the Status Tab in the Process submenu. It displays public statistics of XMRvsBeast, which are available [here](https://xmrvsbeast.com/p2pool) 
 It is refreshed every minute.
 This column will be active if the XvB process is started even partially, it doesn't need the token to be provided.
 
