@@ -1,4 +1,4 @@
 [toolchain]
-channel = "nightly-2024-03-21"
+channel = "stable"
 components = [ "rustfmt", "rustc-dev", "cargo", "clippy",  "rust-analyzer"]
 target = ["x86_64-unknown-linux-gnu", "aarch64-apple-darwin", "x86_64-apple-darwin","x86_64-pc-windows-gnu"]

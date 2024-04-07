@@ -16,7 +16,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        os: [macos-latest, ubuntu-latest]
 
     steps:
     - name: Checkout
@@ -37,11 +37,10 @@ jobs:
         if [ "$RUNNER_OS" == "Linux" ]; then
           sudo apt update
           sudo apt install -y libgtk-3-dev
+          rustup target install x86_64-pc-windows-gnu
         elif [ "$RUNNER_OS" == "macOS" ]; then
           cargo install cargo-bundle
           rustup target install aarch64-apple-darwin
-        elif [ "$RUNNER_OS" == "Windows" ]; then
-          rustup target install x86_64-pc-windows-gnu
         fi
       shell: bash
 
@@ -62,16 +61,15 @@ jobs:
           tar -cf linux.tar gupaxx
         else
           cargo build --release --target x86_64-pc-windows-gnu
-          mv target/x86_64-pc-windows-gnu/release/gupaxx .
         fi
       shell: bash
 
     - name: Archive (Windows)
-      if: ${{ runner.os == 'Windows' }}
+      if: ${{ runner.os == 'Linux' }}
       uses: actions/upload-artifact@v4
       with:
         name: windows
-        path: target/release/gupaxx.exe
+        path: target/x86_64-pc-windows-gnu/release/gupaxx.exe
 
     - name: Archive
       if: ${{ runner.os == 'macOS' }}
