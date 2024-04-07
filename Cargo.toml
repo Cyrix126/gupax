@@ -28,6 +28,7 @@ default = []
 distro = []
 
 [dependencies]
+flexi_logger = "0.28.0"
 anyhow = "1.0.81"
 benri = "0.1.12"
 bytes = "1.6.0"

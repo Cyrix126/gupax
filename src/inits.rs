@@ -16,10 +16,10 @@ use egui::TextStyle::{Body, Button, Heading, Monospace, Name};
 use egui::*;
 use env_logger::fmt::style::Style;
 use env_logger::{Builder, WriteStyle};
+use flexi_logger::{FileSpec, Logger};
 use log::LevelFilter;
 use std::sync::Arc;
 use std::time::Instant;
-
 #[cold]
 #[inline(never)]
 pub fn init_text_styles(ctx: &egui::Context, width: f32, pixels_per_point: f32) {
@@ -84,27 +84,31 @@ pub fn init_logger(now: Instant) {
         _ => LevelFilter::Info,
     };
     std::env::set_var("RUST_LOG", format!("off,gupax={}", filter_env));
-
-    Builder::new()
-        .format(move |buf, record| {
-            let level = record.level();
-            let level_style = buf.default_level_style(level);
-            let dimmed = Style::new().dimmed();
-            writeln!(
-                buf,
-                "{level_style}[{}]{level_style:#} [{dimmed}{:.3}{dimmed:#}] [{dimmed}{}{dimmed:#}:{dimmed}{}{dimmed:#}] {}",
-                level,
-                now.elapsed().as_secs_f32(),
-                record.file().unwrap_or("???"),
-                record.line().unwrap_or(0),
-                record.args(),
-            )
-        })
-        .filter_level(filter)
-        .write_style(WriteStyle::Always)
-        .parse_default_env()
-        .format_timestamp_millis()
-        .init();
+    Logger::try_with_str("debug")
+        .unwrap()
+        .log_to_file(FileSpec::default())
+        .start()
+        .unwrap();
+    // Builder::new()
+    //     .format(move |buf, record| {
+    //         let level = record.level();
+    //         let level_style = buf.default_level_style(level);
+    //         let dimmed = Style::new().dimmed();
+    //         writeln!(
+    //             buf,
+    //             "{level_style}[{}]{level_style:#} [{dimmed}{:.3}{dimmed:#}] [{dimmed}{}{dimmed:#}:{dimmed}{}{dimmed:#}] {}",
+    //             level,
+    //             now.elapsed().as_secs_f32(),
+    //             record.file().unwrap_or("???"),
+    //             record.line().unwrap_or(0),
+    //             record.args(),
+    //         )
+    //     })
+    //     .filter_level(filter)
+    //     .write_style(WriteStyle::Always)
+    //     .parse_default_env()
+    //     .format_timestamp_millis()
+    //     .init();
     info!("init_logger() ... OK");
     info!("Log level ... {}", filter);
 }
