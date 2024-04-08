@@ -2,6 +2,7 @@
 extend-exclude = [
 	"assets/",
 	"pgp/",
+	"README.md"
 ]
 [default]
 extend-ignore-identifiers-re = ["ehr", "PN"]
