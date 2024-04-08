@@ -50,10 +50,10 @@
       - [x] sleep 10mn less time to spare then ask Xmrig to mine on XvB node
     - [x] output log to console in XvB tab
 - [x] fix some overlapping from upstream
-- [ ] edit metadata of project
-  - [ ] adapt README for XvB 
+- [x] edit metadata of project
+  - [x] adapt README for XvB 
     - [x] beta release
-    - [ ] stable release
+    - [x] stable release
   - [ ] video tutorial to set up XvB Tab
   - [x] adapt doc for new code
   - [x] cargo package metadata
@@ -72,5 +72,5 @@
   - [x] time calculated by algorithm 
 - [x] better automatization with utils for releases
 - [x] pre-release
-  - [ ] feedback
-- [ ] release
+  - [x] feedback
+- [x] release
