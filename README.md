@@ -108,3 +108,11 @@ The GUI library Gupaxx uses is [egui](https://github.com/emilk/egui). It is lice
 [Many other libraries are used that have various licenses.](https://github.com/Cyrix126/gupaxx/blob/master/Cargo.toml)
 
 [Gupaxx](https://github.com/cyrix126/gupax/blob/master/LICENSE), [P2Pool](https://github.com/SChernykh/p2pool/blob/master/LICENSE), and [XMRig](https://github.com/xmrig/xmrig/blob/master/LICENSE) are licensed under the GNU General Public License v3.0.
+
+## Donations
+
+If you'd like to thank me for the development of Gupaxx and/or motivate me to improve it you're welcome to send any amount of XMR to the following address:
+
+```
+8BtwGfQUJu1LahXK8fo6nNH8Bmy4pXd4UBdUEntVkk5zRfS4ax1uKR4TmAxJe3wim2HRXR22hZT6jQWgPiN7J8Nx5yGUBiX
+```
