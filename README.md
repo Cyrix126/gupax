@@ -2,11 +2,7 @@
 
 ## Status of development
 
-This fork is a work in progress, trying to achieve the bounty [**A fork of GUPAX integrating the XMRvsBeast Bonus Hashrate Raffle for P2Pool Miners**](https://bounties.monero.social/posts/105).
-
-It is not yet ready for stable release. It works in theory but not yet tested enough. Please feel free to test the beta release and open an issue if you encounter an anomaly.
-
-You can see the progress with [TODO](TODO_XMRvsBeast.md)
+This fork has a stable release. It is intended for end users and offers a friendly easy user experience.
 
 ## Gupaxx
 
