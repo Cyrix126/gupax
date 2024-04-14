@@ -173,6 +173,7 @@ async fn sleep_then_update_node_xmrig(
     address: &str,
     gui_api_xvb: &Arc<Mutex<PubXvbApi>>,
     gui_api_xmrig: &Arc<Mutex<PubXmrigApi>>,
+    rig: &str,
 ) {
     let node = lock!(gui_api_xvb).stats_priv.node;
     debug!(
@@ -196,6 +197,7 @@ async fn sleep_then_update_node_xmrig(
                 &node,
                 address,
                 gui_api_xmrig,
+                rig,
             )
             .await
             {
@@ -231,6 +233,7 @@ pub(crate) async fn algorithm(
     state_p2pool: &crate::disk::state::P2pool,
     share: u32,
     time_donated: &Arc<Mutex<u32>>,
+    rig: &str,
 ) {
     debug!("Xvb Process | Algorithm is started");
     output_console(
@@ -282,6 +285,7 @@ pub(crate) async fn algorithm(
                 &XvbNode::P2pool,
                 address,
                 gui_api_xmrig,
+                rig,
             )
             .await
             {
@@ -305,6 +309,7 @@ pub(crate) async fn algorithm(
             address,
             gui_api_xvb,
             gui_api_xmrig,
+            "",
         )
         .await;
         lock!(gui_api_xvb)
@@ -330,6 +335,7 @@ pub(crate) async fn algorithm(
                 &XvbNode::P2pool,
                 address,
                 gui_api_xmrig,
+                rig,
             )
             .await
             {

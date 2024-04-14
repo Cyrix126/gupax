@@ -826,6 +826,7 @@ impl PrivXmrigApi {
         node: &XvbNode,
         address: &str,
         pub_api_xmrig: &Arc<Mutex<PubXmrigApi>>,
+        rig: &str,
     ) -> Result<()> {
         // get config
         let request = client
@@ -843,6 +844,9 @@ impl PrivXmrigApi {
             .ok_or_else(|| anyhow!("pools/0/user does not exist in xmrig config"))? = node
             .user(&address.chars().take(8).collect::<String>())
             .into();
+        *config
+            .pointer_mut("/pools/0/rig-id")
+            .ok_or_else(|| anyhow!("pools/0/rig-id does not exist in xmrig config"))? = rig.into();
         *config
             .pointer_mut("/pools/0/tls")
             .ok_or_else(|| anyhow!("pools/0/tls does not exist in xmrig config"))? =

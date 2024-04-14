@@ -300,6 +300,7 @@ impl Helper {
                                         &state_p2pool,
                                         share,
                                         &time_donated,
+                                        &state_xmrig.rig,
                                     ).await;
                                 })));
                             } else {
@@ -501,6 +502,7 @@ async fn check_state_outcauses_xvb(
             {
                 let token_xmrig = state_xmrig.token.clone();
                 let address = state_p2pool.address.clone();
+                let rig = state_xmrig.rig.clone();
                 spawn(enc!((client, pub_api_xmrig, gui_api) async move {
 
                 if let Err(err) = PrivXmrigApi::update_xmrig_config(
@@ -510,6 +512,7 @@ async fn check_state_outcauses_xvb(
                     &XvbNode::P2pool,
                     &address,
                     &pub_api_xmrig,
+                    &rig
                 )
                 .await
                         {
@@ -618,6 +621,7 @@ fn signal_interrupt(
         ProcessSignal::UpdateNodes(node) => {
             if lock!(process).state != ProcessState::Waiting {
                 let token_xmrig = state_xmrig.token.clone();
+                let rig = state_xmrig.rig.clone();
                 let address = state_p2pool.address.clone();
                 // check if state is alive. If it is and it is receiving such a signal, it means something a node (XvB or P2Pool) has failed.
                 // if XvB, xmrig needs to be switch to the other node (both will be checked though to be sure).
@@ -664,6 +668,7 @@ fn signal_interrupt(
                         &XvbNode::P2pool,
                         &address,
                         &gui_api_xmrig,
+                        &rig
                     )
                     .await {
                         output_console(
