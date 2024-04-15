@@ -28,7 +28,6 @@ default = []
 distro = []
 
 [dependencies]
-flexi_logger = "0.28.0"
 anyhow = "1.0.81"
 benri = "0.1.12"
 bytes = "1.6.0"
@@ -47,6 +46,7 @@ egui_extras = { version = "0.27.2", features = ["image"] }
 ## Using [wgpu] actually crashes macOS (fixed in 0.20.x though).
 
 #--------------------------------------------------------------------------------
+flexi_logger = "0.28.0"
 env_logger = "0.11.3"
 figment = { version = "0.10.15", features = ["toml"] }
 reqwest = {version = "0.12.3", default-features=false, features=["json", "rustls-tls"]}
