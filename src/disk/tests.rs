@@ -43,6 +43,7 @@ mod test {
 			selected_scale = 0.0
 			tab = "About"
 			ratio = "Width"
+			bundled = false
 
 			[status]
 			submenu = "P2pool"

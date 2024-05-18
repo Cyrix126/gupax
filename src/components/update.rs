@@ -24,20 +24,15 @@
 //     b. auto-update at startup
 
 //---------------------------------------------------------------------------------------------------- Imports
-use crate::components::update::Name::*;
 use crate::{
     app::Restart,
     constants::GUPAX_VERSION,
-    disk::{
-        state::{State, Version},
-        *,
-    },
+    disk::{state::State, *},
     macros::*,
     miscs::get_exe_dir,
     utils::errors::{ErrorButtons, ErrorFerris, ErrorState},
 };
 use anyhow::{anyhow, Error};
-use bytes::Bytes;
 use log::*;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
@@ -46,19 +41,7 @@ use reqwest::{Client, RequestBuilder};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use tokio::task::JoinHandle;
 use walkdir::WalkDir;
-
-// On apple-darwin targets there is an issue with the native and rustls
-// tls implementation so this makes it fall back to the openssl variant.
-//
-// https://gitlab.torproject.org/tpo/core/arti/-/issues/715
-// #[cfg(not(target_os = "macos"))]
-// use tls_api_native_tls::TlsConnector;
-// #[cfg(target_os = "macos")]
-// use tls_api_openssl::TlsConnector;
-
-// use tls_api::{TlsConnector as TlsConnectorTrait, TlsConnectorBuilder};
 
 #[cfg(target_os = "windows")]
 use zip::ZipArchive;
@@ -68,114 +51,41 @@ use zip::ZipArchive;
 //---------------------------------------------------------------------------------------------------- Constants
 // Package naming schemes:
 // gupax  | gupax-vX.X.X-(windows|macos|linux)-(x64|arm64)-(standalone|bundle).(zip|tar.gz)
-// p2pool | p2pool-vX.X.X-(windows|macos|linux)-(x64|aarch64).(zip|tar.gz)
-// xmrig  | xmrig-X.X.X-(msvc-win64|macos-x64|macos-arm64|linux-static-x64).(zip|tar.gz)
-//
 // Download link = PREFIX + Version (found at runtime) + SUFFIX + Version + EXT
 // Example: https://github.com/hinto-janai/gupax/releases/download/v0.0.1/gupax-v0.0.1-linux-standalone-x64.tar.gz
 //
-// Exceptions (there are always exceptions...):
-//   - XMRig doesn't have a [v], so it is [xmrig-6.18.0-...]
-//   - XMRig separates the hash and signature
-//   - P2Pool hashes are in UPPERCASE
 
 const GUPAX_METADATA: &str = "https://api.github.com/repos/Cyrix126/gupaxx/releases/latest";
-const P2POOL_METADATA: &str = "https://api.github.com/repos/SChernykh/p2pool/releases/latest";
-const XMRIG_METADATA: &str = "https://api.github.com/repos/xmrig/xmrig/releases/latest";
 
-const GUPAX_PREFIX: &str = "https://github.com/Cyrix126/gupaxx/releases/download/";
-const P2POOL_PREFIX: &str = "https://github.com/SChernykh/p2pool/releases/download/";
-const XMRIG_PREFIX: &str = "https://github.com/xmrig/xmrig/releases/download/";
-
-const GUPAX_SUFFIX: &str = "/gupaxx-";
-const P2POOL_SUFFIX: &str = "/p2pool-";
-const XMRIG_SUFFIX: &str = "/xmrig-";
-
-// const GUPAX_HASH: &str = "SHA256SUMS";
-// const P2POOL_HASH: &str = "sha256sums.txt.asc";
-// const XMRIG_HASH: &str = "SHA256SUMS";
-
-#[cfg(target_os = "windows")]
-mod impl_platform {
-    pub(super) const GUPAX_EXTENSION: &str = "-windows-x64-standalone.zip";
-    pub(super) const P2POOL_EXTENSION: &str = "-windows-x64.zip";
-    pub(super) const XMRIG_EXTENSION: &str = "-msvc-win64.zip";
+cfg_if::cfg_if! {
+     if #[cfg(target_family = "unix")] {
+    pub(super) const GUPAX_BINARY: &str = "gupaxx";
+    pub(super) const P2POOL_BINARY: &str = "p2pool";
+    pub(super) const XMRIG_BINARY: &str = "xmrig";
+     }
+}
+cfg_if::cfg_if! {
+     if #[cfg(target_os = "windows")] {
+    pub(super) const OS_TARGET: &str = "windows";
+    pub(super) const ARCHIVE_EXT: &str = "zip";
     pub(super) const GUPAX_BINARY: &str = "Gupaxx.exe";
     pub(super) const P2POOL_BINARY: &str = "p2pool.exe";
     pub(super) const XMRIG_BINARY: &str = "xmrig.exe";
-    pub(super) const VALID_GUPAX_1: &str = "GUPAXX.exe";
-    pub(super) const VALID_GUPAX_2: &str = "Gupaxx.exe";
-    pub(super) const VALID_GUPAX_3: &str = "gupaxx.exe";
-    pub(super) const VALID_XMRIG_1: &str = "XMRIG.exe";
-    pub(super) const VALID_XMRIG_2: &str = "XMRig.exe";
-    pub(super) const VALID_XMRIG_3: &str = "Xmrig.exe";
-    pub(super) const VALID_XMRIG_4: &str = "xmrig.exe";
-    pub(super) const VALID_P2POOL_1: &str = "P2POOL.exe";
-    pub(super) const VALID_P2POOL_2: &str = "P2Pool.exe";
-    pub(super) const VALID_P2POOL_3: &str = "P2pool.exe";
-    pub(super) const VALID_P2POOL_4: &str = "p2pool.exe";
+     } else if #[cfg(target_os = "linux")] {
+    pub(super) const OS_TARGET: &str = "linux";
+    pub(super) const ARCHIVE_EXT: &str = "tar.gz";
+     } else if #[cfg(target_os = "macos")] {
+    pub(super) const OS_TARGET: &str = "macos";
+    pub(super) const ARCHIVE_EXT: &str = "tar.gz";
+     }
 }
 
-#[cfg(target_family = "unix")]
-mod impl_unix {
-    pub(super) const GUPAX_BINARY: &str = "gupaxx";
-    // pub(super) const P2POOL_BINARY: &str = "p2pool";
-    // pub(super) const XMRIG_BINARY: &str = "xmrig";
-    pub(super) const VALID_GUPAX_1: &str = "GUPAXX";
-    pub(super) const VALID_GUPAX_2: &str = "Gupaxx";
-    pub(super) const VALID_GUPAX_3: &str = "gupaxx";
-    pub(super) const VALID_XMRIG_1: &str = "XMRIG";
-    pub(super) const VALID_XMRIG_2: &str = "XMRig";
-    pub(super) const VALID_XMRIG_3: &str = "Xmrig";
-    pub(super) const VALID_XMRIG_4: &str = "xmrig";
-    pub(super) const VALID_P2POOL_1: &str = "P2POOL";
-    pub(super) const VALID_P2POOL_2: &str = "P2Pool";
-    pub(super) const VALID_P2POOL_3: &str = "P2pool";
-    pub(super) const VALID_P2POOL_4: &str = "p2pool";
-}
-
-#[cfg(target_os = "macos")]
 #[cfg(target_arch = "x86_64")]
-mod impl_platform {
-    pub(super) use super::impl_unix::*;
-
-    pub(super) const GUPAX_EXTENSION: &str = "-macos-x64-standalone.tar.gz";
-    pub(super) const P2POOL_EXTENSION: &str = "-macos-x64.tar.gz";
-    pub(super) const XMRIG_EXTENSION: &str = "-macos-x64.tar.gz";
-}
-
-#[cfg(target_os = "macos")]
+pub(super) const ARCH_TARGET: &str = "x64";
 #[cfg(target_arch = "aarch64")]
-mod impl_platform {
-    pub(super) use super::impl_unix::*;
+pub(super) const ARCH_TARGET: &str = "arm64";
 
-    pub(super) const GUPAX_EXTENSION: &str = "-macos-arm64-standalone.tar.gz";
-    pub(super) const P2POOL_EXTENSION: &str = "-macos-aarch64.tar.gz";
-    pub(super) const XMRIG_EXTENSION: &str = "-macos-arm64.tar.gz";
-}
-
-#[cfg(target_os = "linux")]
-mod impl_platform {
-    pub(super) use super::impl_unix::*;
-
-    pub(super) const GUPAX_EXTENSION: &str = "-linux-x64-standalone.tar.gz";
-    pub(super) const P2POOL_EXTENSION: &str = "-linux-x64.tar.gz";
-    pub(super) const XMRIG_EXTENSION: &str = "-linux-static-x64.tar.gz";
-}
-
-use impl_platform::*;
-
-// const VALID_GUPAX: [&str; 3] = [VALID_GUPAX_1, VALID_GUPAX_2, VALID_GUPAX_3];
-const VALID_XMRIG: [&str; 4] = [VALID_XMRIG_1, VALID_XMRIG_2, VALID_XMRIG_3, VALID_XMRIG_4];
-const VALID_P2POOL: [&str; 4] = [
-    VALID_P2POOL_1,
-    VALID_P2POOL_2,
-    VALID_P2POOL_3,
-    VALID_P2POOL_4,
-];
-
-// Some fake Curl/Wget user-agents because GitHub API requires one and a Tor browser
-// user-agent might be fingerprintable without all the associated headers.
+// Some fake Curl/Wget user-agents because GitHub API requires one// user-agent might be fingerprintable without all the associated headers.
 const FAKE_USER_AGENT: [&str; 25] = [
     "Wget/1.16.3",
     "Wget/1.17",
@@ -207,17 +117,13 @@ const FAKE_USER_AGENT: [&str; 25] = [
 const MSG_NONE: &str = "No update in progress";
 const MSG_START: &str = "Starting update";
 const MSG_TMP: &str = "Creating temporary directory";
-// const MSG_TOR: &str = "Creating Tor+HTTPS client";
 const MSG_HTTPS: &str = "Creating HTTPS client";
 const MSG_METADATA: &str = "Fetching package metadata";
-const MSG_METADATA_RETRY: &str = "Fetching package metadata failed, attempt";
 const MSG_COMPARE: &str = "Compare package versions";
 const MSG_UP_TO_DATE: &str = "All packages already up-to-date";
 const MSG_DOWNLOAD: &str = "Downloading packages";
-const MSG_DOWNLOAD_RETRY: &str = "Downloading packages failed, attempt";
 const MSG_EXTRACT: &str = "Extracting packages";
 const MSG_UPGRADE: &str = "Upgrading packages";
-pub const MSG_SUCCESS: &str = "Update successful";
 pub const MSG_FAILED: &str = "Update failed";
 pub const MSG_FAILED_HELP: &str =
     "Consider manually replacing your executable from github releases: https://github.com/Cyrix126/gupaxx/releases";
@@ -241,10 +147,8 @@ pub fn check_p2pool_path(path: &str) -> bool {
             return false;
         }
     };
-    path == VALID_P2POOL[0]
-        || path == VALID_P2POOL[1]
-        || path == VALID_P2POOL[2]
-        || path == VALID_P2POOL[3]
+
+    path == P2POOL_BINARY
 }
 
 pub fn check_xmrig_path(path: &str) -> bool {
@@ -259,10 +163,7 @@ pub fn check_xmrig_path(path: &str) -> bool {
             return false;
         }
     };
-    path == VALID_XMRIG[0]
-        || path == VALID_XMRIG[1]
-        || path == VALID_XMRIG[2]
-        || path == VALID_XMRIG[3]
+    path == XMRIG_BINARY
 }
 
 //---------------------------------------------------------------------------------------------------- Update struct/impl
@@ -270,7 +171,7 @@ pub fn check_xmrig_path(path: &str) -> bool {
 // Progress bar structure:
 // 0%  | Start
 // 5%  | Create tmp directory, pkg list, fake user-agent
-// 5%  | Create Tor/HTTPS client
+// 5%  | Create HTTPS client
 // 30% | Download Metadata (x3)
 // 5%  | Compare Versions (x3)
 // 30% | Download Archive (x3)
@@ -279,13 +180,14 @@ pub fn check_xmrig_path(path: &str) -> bool {
 
 #[derive(Clone)]
 pub struct Update {
-    pub path_gupax: String,         // Full path to current gupax
-    pub path_p2pool: String,        // Full path to current p2pool
-    pub path_xmrig: String,         // Full path to current xmrig
-    pub tmp_dir: String,            // Full path to temporary directory
+    pub path_gupax: String,  // Full path to current gupax
+    pub path_p2pool: String, // Full path to current p2pool
+    pub path_xmrig: String,  // Full path to current xmrig
+    #[cfg(target_os = "windows")]
+    pub tmp_dir: String, // Full path to temporary directory
     pub updating: Arc<Mutex<bool>>, // Is an update in progress?
-    pub prog: Arc<Mutex<f32>>,      // Holds the 0-100% progress bar number
-    pub msg: Arc<Mutex<String>>,    // Message to display on [Gupax] tab while updating
+    pub prog: Arc<Mutex<f32>>, // Holds the 0-100% progress bar number
+    pub msg: Arc<Mutex<String>>, // Message to display on [Gupax] tab while updating
 }
 
 impl Update {
@@ -295,6 +197,7 @@ impl Update {
             path_gupax,
             path_p2pool: path_p2pool.display().to_string(),
             path_xmrig: path_xmrig.display().to_string(),
+            #[cfg(target_os = "windows")]
             tmp_dir: "".to_string(),
             updating: arc_mut!(false),
             prog: arc_mut!(0.0),
@@ -321,21 +224,6 @@ impl Update {
         Ok(tmp_dir)
     }
 
-    // #[cold]
-    // #[inline(never)]
-    // Get an HTTPS client. Uses [Arti] if Tor is enabled.
-    // The base type looks something like [hyper::Client<...>].
-    // This is then wrapped with the custom [ClientEnum] type to implement
-    // dynamically returning either a [Tor+TLS|TLS-only] client at based on user settings.
-    //     tor == true?  => return Tor client
-    //     tor == false? => return normal TLS client
-    //
-    // Since functions that take generic INPUT are much easier to implement,
-    // [get_response()] just takes a [hyper::Client<C>], which is passed to
-    // it via deconstructing this [ClientEnum] with a match, like so:
-    //     ClientEnum::Tor(T)   => get_response(... T ...)
-    //     ClientEnum::Https(H) => get_response(... H ...)
-    //
     #[cold]
     #[inline(never)]
     // Intermediate function that spawns a new thread
@@ -358,106 +246,43 @@ impl Update {
         error!("Update | This is the [Linux distro] version of Gupax, updates are disabled");
         #[cfg(feature = "distro")]
         return;
-
-        // Check P2Pool path for safety
-        // Attempt relative to absolute path
-        let p2pool_path = match into_absolute_path(gupax.p2pool_path.clone()) {
-            Ok(p) => p,
-            Err(e) => {
-                error_state.set(
-                    format!(
-                        "Provided P2Pool path could not be turned into an absolute path: {}",
-                        e
-                    ),
-                    ErrorFerris::Error,
-                    ErrorButtons::Okay,
-                );
-                return;
-            }
-        };
-        // Attempt to get basename
-        let file = match p2pool_path.file_name() {
-            Some(p) => {
-                // Attempt to turn into str
-                match p.to_str() {
-                    Some(p) => p,
-                    None => {
-                        error_state.set("Provided P2Pool path could not be turned into a UTF-8 string (are you using non-English characters?)", ErrorFerris::Error, ErrorButtons::Okay);
-                        return;
-                    }
+        // verify validity of absolute path for p2pool and xmrig only if we want to update them.
+        if lock!(og).gupax.bundled {
+            // Check P2Pool path for safety
+            // Attempt relative to absolute path
+            // it's ok if file doesn't exist. User could enable bundled version for the first time.
+            let p2pool_path = match into_absolute_path(gupax.p2pool_path.clone()) {
+                Ok(p) => p,
+                Err(e) => {
+                    error_state.set(
+                        format!(
+                            "Provided P2Pool path could not be turned into an absolute path: {}",
+                            e
+                        ),
+                        ErrorFerris::Error,
+                        ErrorButtons::Okay,
+                    );
+                    return;
                 }
-            }
-            None => {
-                error_state.set(
-                    "Provided P2Pool path could not be found",
-                    ErrorFerris::Error,
-                    ErrorButtons::Okay,
-                );
-                return;
-            }
-        };
-        // If it doesn't look like [P2Pool], its probably a bad move
-        // to overwrite it with an update, so set an error.
-        // Doesnt seem like you can [match] on array indexes
-        // so that explains the ridiculous if/else.
-        if check_p2pool_path(file) {
-            info!("Update | Using P2Pool path: [{}]", p2pool_path.display());
-        } else {
-            warn!(
-                "Update | Aborting update, incorrect P2Pool path: [{}]",
-                file
-            );
-            let text = format!("Provided P2Pool path seems incorrect. Not starting update for safety.\nTry one of these: {:?}", VALID_P2POOL);
-            error_state.set(text, ErrorFerris::Error, ErrorButtons::Okay);
-            return;
-        }
-
-        // Check XMRig path for safety
-        let xmrig_path = match into_absolute_path(gupax.xmrig_path.clone()) {
-            Ok(p) => p,
-            Err(e) => {
-                error_state.set(
-                    format!(
-                        "Provided XMRig path could not be turned into an absolute path: {}",
-                        e
-                    ),
-                    ErrorFerris::Error,
-                    ErrorButtons::Okay,
-                );
-                return;
-            }
-        };
-        let file = match xmrig_path.file_name() {
-            Some(p) => {
-                // Attempt to turn into str
-                match p.to_str() {
-                    Some(p) => p,
-                    None => {
-                        error_state.set("Provided XMRig path could not be turned into a UTF-8 string (are you using non-English characters?)", ErrorFerris::Error, ErrorButtons::Okay);
-                        return;
-                    }
+            };
+            // Check XMRig path for safety
+            let xmrig_path = match into_absolute_path(gupax.xmrig_path.clone()) {
+                Ok(p) => p,
+                Err(e) => {
+                    error_state.set(
+                        format!(
+                            "Provided XMRig path could not be turned into an absolute path: {}",
+                            e
+                        ),
+                        ErrorFerris::Error,
+                        ErrorButtons::Okay,
+                    );
+                    return;
                 }
-            }
-            None => {
-                error_state.set(
-                    "Provided XMRig path could not be found",
-                    ErrorFerris::Error,
-                    ErrorButtons::Okay,
-                );
-                return;
-            }
-        };
-        if check_xmrig_path(file) {
-            info!("Update | Using XMRig path: [{}]", xmrig_path.display());
-        } else {
-            warn!("Update | Aborting update, incorrect XMRig path: [{}]", file);
-            let text = format!("Provided XMRig path seems incorrect. Not starting update for safety.\nTry one of these: {:?}", VALID_XMRIG);
-            error_state.set(text, ErrorFerris::Error, ErrorButtons::Okay);
-            return;
+            };
+            lock!(update).path_p2pool = p2pool_path.display().to_string();
+            lock!(update).path_xmrig = xmrig_path.display().to_string();
         }
-
-        lock!(update).path_p2pool = p2pool_path.display().to_string();
-        lock!(update).path_xmrig = xmrig_path.display().to_string();
 
         // Clone before thread spawn
         let og = Arc::clone(og);
@@ -467,7 +292,7 @@ impl Update {
         let restart = Arc::clone(restart);
         info!("Spawning update thread...");
         std::thread::spawn(move || {
-            match Update::start(update.clone(), og.clone(), state_ver.clone(), restart) {
+            match Update::start(update.clone(), og.clone(), restart) {
                 Ok(_) => {
                     info!("Update | Saving state...");
                     let original_version = lock!(og).version.clone();
@@ -504,8 +329,7 @@ impl Update {
     #[tokio::main]
     pub async fn start(
         update: Arc<Mutex<Self>>,
-        _og: Arc<Mutex<State>>,
-        state_ver: Arc<Mutex<Version>>,
+        og: Arc<Mutex<State>>,
         restart: Arc<Mutex<Restart>>,
     ) -> Result<(), anyhow::Error> {
         #[cfg(feature = "distro")]
@@ -532,14 +356,11 @@ impl Update {
         let tmp_dir = Self::get_tmp_dir()?;
         std::fs::create_dir(&tmp_dir)?;
 
-        // Make Pkg vector
-        let mut vec = vec![Pkg::new(Gupax), Pkg::new(P2pool), Pkg::new(Xmrig)];
-
         // Generate fake user-agent
-        let user_agent = Pkg::get_user_agent();
+        let user_agent = get_user_agent();
         *lock2!(update, prog) = 5.0;
 
-        // Create Tor/HTTPS client
+        // Create HTTPS client
         let lock = lock!(update);
         let msg = MSG_HTTPS.to_string();
         info!("Update | {}", msg);
@@ -552,237 +373,115 @@ impl Update {
         //---------------------------------------------------------------------------------------------------- Metadata
         *lock2!(update, msg) = MSG_METADATA.to_string();
         info!("Update | {}", METADATA);
-        let mut vec2 = vec![];
         // Loop process:
-        // 1. Start all async metadata fetches
-        // 2. Wait for all to finish
-        // 3. Iterate over all [pkg.new_ver], check if empty
-        // 4. If not empty, move [pkg] to different vec
-        // 5. At end, if original vec isn't empty, that means something failed
-        // 6. Redo loop [3] times (rebuild circuit if using Tor), with the original vec (that now only has the failed pkgs)
-        //
-        // This logic was originally in the [Pkg::get_metadata()]
-        // function itself but for some reason, it was getting skipped over,
-        // so the [new_ver] check is now here, in the outer scope.
-        for i in 1..=3 {
-            if i > 1 {
-                *lock2!(update, msg) = format!("{} [{}/3]", MSG_METADATA_RETRY, i);
-            }
-            let mut handles: Vec<JoinHandle<Result<(), anyhow::Error>>> = vec![];
-            for pkg in vec.iter() {
-                // Clone data before sending to async
-                let new_ver = Arc::clone(&pkg.new_ver);
-                let client = client.clone();
-                let link = pkg.link_metadata.to_string();
-                // Send to async
-                let handle: JoinHandle<Result<(), anyhow::Error>> = tokio::spawn(async move {
-                    Pkg::get_metadata(new_ver, &client, link, user_agent).await
-                });
-                handles.push(handle);
-            }
-            // Handle await
-            for handle in handles {
-                // Two [??] will send the error.
-                // We don't actually want to return the error here since we
-                // prefer looping and retrying over immediately erroring out.
-                if let Err(e) = handle.await? {
-                    warn!("Update | {}", e)
-                }
-            }
-            // Check for empty version
-            let mut indexes = vec![];
-            for (index, pkg) in vec.iter().enumerate() {
-                if lock!(pkg.new_ver).is_empty() {
-                    warn!("Update | {} failed, attempt [{}/3]...", pkg.name, i + 1);
-                } else {
-                    indexes.push(index);
-                    vec2.push(pkg.clone());
-                    *lock2!(update, prog) += 10.0;
-                    info!("Update | {} {} ... OK", pkg.name, lock!(pkg.new_ver));
-                }
-            }
-            // Order indexes from biggest to smallest
-            // This prevents shifting the whole vector and causing panics.
-            indexes.sort();
-            indexes.reverse();
-            for index in indexes {
-                vec.remove(index);
-            }
-            if vec.is_empty() {
-                break;
-            }
-            // Some Tor exit nodes seem to be blocked by GitHub's API,
-            // so recreate the circuit every loop.
-        }
-        if vec.is_empty() {
-            info!("Update | Metadata ... OK ... {}%", lock2!(update, prog));
+        // reqwest will retry himself
+        // Send to async
+        let new_ver = if let Ok(new_ver) =
+            get_metadata(&client, GUPAX_METADATA.to_string(), user_agent).await
+        {
+            new_ver
         } else {
             error!("Update | Metadata ... FAIL");
             return Err(anyhow!("Metadata fetch failed"));
-        }
+        };
+
+        *lock2!(update, prog) += 10.0;
+        info!("Update | Gupaxx {} ... OK", new_ver);
 
         //---------------------------------------------------------------------------------------------------- Compare
         *lock2!(update, msg) = MSG_COMPARE.to_string();
         info!("Update | {}", COMPARE);
-        let mut vec3 = vec![];
-        let mut new_pkgs = vec![];
-        for pkg in vec2.iter() {
-            let new_ver = lock!(pkg.new_ver).clone();
-            let diff;
-            let old_ver;
-            let name;
-            match pkg.name {
-                Gupax => {
-                    // Compare against the built-in compiled version as well as an in-memory version
-                    // that gets updated during an update. This prevents the updater always thinking
-                    // there's a new Gupax update since the user didnt restart and is still technically
-                    // using the old version (even though the underlying binary was updated).
-                    old_ver = lock!(state_ver).gupax.clone();
-                    diff = old_ver != new_ver && GUPAX_VERSION != new_ver;
-                    name = "Gupaxx";
-                }
-                P2pool => {
-                    old_ver = lock!(state_ver).p2pool.clone();
-                    diff = old_ver != new_ver;
-                    name = "P2Pool";
-                }
-                Xmrig => {
-                    old_ver = lock!(state_ver).xmrig.clone();
-                    diff = old_ver != new_ver;
-                    name = "XMRig";
-                }
-            }
-            if diff {
-                info!(
-                    "Update | {} {} != {} ... ADDING",
-                    pkg.name, old_ver, new_ver
-                );
-                new_pkgs.push(format!("\n{} {}  ->  {}", name, old_ver, new_ver));
-                vec3.push(pkg);
-            } else {
-                info!(
-                    "Update | {} {} == {} ... SKIPPING",
-                    pkg.name, old_ver, new_ver
-                );
-            }
+        let diff = GUPAX_VERSION != new_ver;
+        if diff {
+            info!(
+                "Update | Gupaxx {} != {} ... ADDING",
+                GUPAX_VERSION, new_ver
+            );
+        } else {
+            info!(
+                "Update | Gupaxx {} == {} ... SKIPPING",
+                GUPAX_VERSION, new_ver
+            );
+            info!("Update | All packages up-to-date ... RETURNING");
+            *lock2!(update, prog) = 100.0;
+            *lock2!(update, msg) = MSG_UP_TO_DATE.to_string();
+            return Ok(());
         }
         *lock2!(update, prog) += 5.0;
         info!("Update | Compare ... OK ... {}%", lock2!(update, prog));
 
         // Return if 0 (all packages up-to-date)
         // Get amount of packages to divide up the percentage increases
-        let pkg_amount = vec3.len() as f32;
-        if pkg_amount == 0.0 {
-            info!("Update | All packages up-to-date ... RETURNING");
-            *lock2!(update, prog) = 100.0;
-            *lock2!(update, msg) = MSG_UP_TO_DATE.to_string();
-            return Ok(());
-        }
-        let new_pkgs: String = new_pkgs.concat();
 
         //---------------------------------------------------------------------------------------------------- Download
-        *lock2!(update, msg) = format!("{}{}", MSG_DOWNLOAD, new_pkgs);
+        *lock2!(update, msg) = format!("{} Gupaxx", MSG_DOWNLOAD);
         info!("Update | {}", DOWNLOAD);
-        let mut vec4 = vec![];
-        for i in 1..=3 {
-            if i > 1 {
-                *lock2!(update, msg) = format!("{} [{}/3]{}", MSG_DOWNLOAD_RETRY, i, new_pkgs);
-            }
-            let mut handles: Vec<JoinHandle<Result<(), anyhow::Error>>> = vec![];
-            for pkg in vec3.iter() {
-                // Clone data before async
-                let bytes = Arc::clone(&pkg.bytes);
-                let client = client.clone();
-                let version = lock!(pkg.new_ver);
-                // Download link = PREFIX + Version (found at runtime) + SUFFIX + Version + EXT
-                // Example: https://github.com/hinto-janai/gupax/releases/download/v0.0.1/gupax-v0.0.1-linux-x64-standalone
-                // XMRig doesn't have a [v], so slice it out
-                let link = match pkg.name {
-                    Name::Xmrig => {
-                        pkg.link_prefix.to_string()
-                            + &version
-                            + pkg.link_suffix
-                            + &version[1..]
-                            + pkg.link_extension
-                    }
-                    _ => {
-                        pkg.link_prefix.to_string()
-                            + &version
-                            + pkg.link_suffix
-                            + &version
-                            + pkg.link_extension
-                    }
-                };
-                info!("Update | {} ... {}", pkg.name, link);
-                let handle: JoinHandle<Result<(), anyhow::Error>> =
-                    tokio::spawn(
-                        async move { Pkg::get_bytes(bytes, &client, link, user_agent).await },
-                    );
-                handles.push(handle);
-            }
-            // Handle await
-            for handle in handles {
-                if let Err(e) = handle.await? {
-                    warn!("Update | {}", e)
-                }
-            }
-            // Check for empty bytes
-            let mut indexes = vec![];
-            for (index, pkg) in vec3.iter().enumerate() {
-                if lock!(pkg.bytes).is_empty() {
-                    warn!("Update | {} failed, attempt [{}/3]...", pkg.name, i);
-                } else {
-                    indexes.push(index);
-                    vec4.push(*pkg);
-                    *lock2!(update, prog) += (30.0 / pkg_amount).round();
-                    info!("Update | {} ... OK", pkg.name);
-                }
-            }
-            // Order indexes from biggest to smallest
-            // This prevents shifting the whole vector and causing panics.
-            indexes.sort();
-            indexes.reverse();
-            for index in indexes {
-                vec3.remove(index);
-            }
-            if vec3.is_empty() {
-                break;
-            }
-        }
-        if vec3.is_empty() {
-            info!("Update | Download ... OK ... {}%", *lock2!(update, prog));
+        // Clone data before async
+        let version = new_ver;
+        // Download link = PREFIX + Version (found at runtime) + SUFFIX + Version + EXT
+        // Example: https://github.com/Cyrix126/gupaxx/releases/download/v1.0.0/gupaxx-v1.0.0-linux-x64-standalone.tar.gz
+        // prefix: https://github.com/Cyrix126/gupaxx/releases/download
+        // version: v1.0.0
+        // suffix: gupaxx
+        // version: v1.0.0
+        // os
+        // arch
+        // standalone or bundled
+        // archive extension
+        let bundle = if lock!(og).gupax.bundled {
+            "bundle"
+        } else {
+            "standalone"
+        };
+        let link = [
+            "https://github.com/Cyrix126/gupaxx/releases/download/",
+            &version,
+            "/gupaxx-",
+            &version,
+            "-",
+            OS_TARGET,
+            "-",
+            ARCH_TARGET,
+            "-",
+            bundle,
+            ".",
+            ARCHIVE_EXT,
+        ]
+        .concat();
+        info!("Update | Gupaxx ... {}", link);
+        let bytes = if let Ok(bytes) = get_bytes(&client, link, user_agent).await {
+            bytes
         } else {
             error!("Update | Download ... FAIL");
             return Err(anyhow!("Download failed"));
-        }
+        };
+        *lock2!(update, prog) += 30.0;
+        info!("Update | Gupaxx ... OK");
+        info!("Update | Download ... OK ... {}%", *lock2!(update, prog));
 
         //---------------------------------------------------------------------------------------------------- Extract
-        *lock2!(update, msg) = format!("{}{}", MSG_EXTRACT, new_pkgs);
+        *lock2!(update, msg) = format!("{} Gupaxx", MSG_EXTRACT);
         info!("Update | {}", EXTRACT);
-        for pkg in vec4.iter() {
-            let tmp = match pkg.name {
-                Name::Gupax => tmp_dir.to_owned() + GUPAX_BINARY,
-                _ => tmp_dir.to_owned() + &pkg.name.to_string(),
-            };
-            #[cfg(target_os = "windows")]
-            ZipArchive::extract(
-                &mut ZipArchive::new(std::io::Cursor::new(lock!(pkg.bytes).as_ref()))?,
-                tmp,
-            )?;
-            #[cfg(target_family = "unix")]
-            tar::Archive::new(flate2::read::GzDecoder::new(lock!(pkg.bytes).as_ref()))
-                .unpack(tmp)?;
-            *lock2!(update, prog) += (5.0 / pkg_amount).round();
-            info!("Update | {} ... OK", pkg.name);
-        }
+        let tmp = tmp_dir.to_owned();
+        #[cfg(target_os = "windows")]
+        ZipArchive::extract(
+            &mut ZipArchive::new(std::io::Cursor::new(bytes.as_ref()))?,
+            tmp,
+        )?;
+        #[cfg(target_family = "unix")]
+        tar::Archive::new(flate2::read::GzDecoder::new(bytes.as_ref())).unpack(tmp)?;
+        *lock2!(update, prog) += 5.0;
+        info!("Update | Gupaxx ... OK");
         info!("Update | Extract ... OK ... {}%", *lock2!(update, prog));
 
         //---------------------------------------------------------------------------------------------------- Upgrade
+        // if bundled, directories p2pool and xmrig will exist.
+        // if not, only gupaxx binary will be present.
         // 1. Walk directories
-        // 2. If basename matches known binary name, start
+        //
         // 3. Rename tmp path into current path
         // 4. Update [State/Version]
-        *lock2!(update, msg) = format!("{}{}", MSG_UPGRADE, new_pkgs);
+        *lock2!(update, msg) = format!("Gupaxx {}", MSG_UPGRADE);
         info!("Update | {}", UPGRADE);
         // If this bool doesn't get set, something has gone wrong because
         // we _didn't_ find a binary even though we downloaded it.
@@ -793,75 +492,55 @@ impl Update {
             if !entry.file_type().is_file() {
                 continue;
             }
-            let basename = entry
+            let name = entry
                 .file_name()
                 .to_str()
                 .ok_or_else(|| anyhow!("WalkDir basename failed"))?;
-            match basename {
-                VALID_GUPAX_1 | VALID_GUPAX_2 | VALID_GUPAX_3 | VALID_P2POOL_1 | VALID_P2POOL_2
-                | VALID_P2POOL_3 | VALID_P2POOL_4 | VALID_XMRIG_1 | VALID_XMRIG_2
-                | VALID_XMRIG_3 | VALID_XMRIG_4 => {
-                    found = true;
-                    let name = match basename {
-                        VALID_GUPAX_1 | VALID_GUPAX_2 | VALID_GUPAX_3 => Gupax,
-                        VALID_P2POOL_1 | VALID_P2POOL_2 | VALID_P2POOL_3 | VALID_P2POOL_4 => P2pool,
-                        _ => Xmrig,
-                    };
-                    let path = match name {
-                        Gupax => lock!(update).path_gupax.clone(),
-                        P2pool => lock!(update).path_p2pool.clone(),
-                        Xmrig => lock!(update).path_xmrig.clone(),
-                    };
-                    let path = Path::new(&path);
-                    // Unix can replace running binaries no problem (they're loaded into memory)
-                    // Windows locks binaries in place, so we must move (rename) current binary
-                    // into the temp folder, then move the new binary into the old ones spot.
-                    // Clearing the temp folder is now moved at startup instead at the end
-                    // of this function due to this behavior, thanks Windows.
-                    #[cfg(target_os = "windows")]
-                    if path.exists() {
-                        let tmp_windows = match name {
-                            Gupax => tmp_dir.clone() + "gupaxx_old.exe",
-                            P2pool => tmp_dir.clone() + "p2pool_old.exe",
-                            Xmrig => tmp_dir.clone() + "xmrig_old.exe",
-                        };
-                        info!(
-                            "Update | WINDOWS ONLY ... Moving old [{}] -> [{}]",
-                            path.display(),
-                            tmp_windows
-                        );
-                        std::fs::rename(&path, tmp_windows)?;
-                    }
-                    info!(
-                        "Update | Moving new [{}] -> [{}]",
-                        entry.path().display(),
-                        path.display()
-                    );
-                    // Create folder for [P2Pool/XMRig]
-                    if name == P2pool || name == Xmrig {
-                        std::fs::create_dir_all(
-                            path.parent()
-                                .ok_or_else(|| anyhow!(format!("{} path failed", name)))?,
-                        )?;
-                    }
-                    // Move downloaded path into old path
-                    std::fs::rename(entry.path(), path)?;
-                    // Update [State] version
-                    match name {
-                        Gupax => {
-                            lock!(state_ver).gupax = Pkg::get_new_pkg_version(Gupax, &vec4)?;
-                            // If we're updating Gupax, set the [Restart] state so that the user knows to restart
-                            *lock!(restart) = Restart::Yes;
-                        }
-                        P2pool => {
-                            lock!(state_ver).p2pool = Pkg::get_new_pkg_version(P2pool, &vec4)?
-                        }
-                        Xmrig => lock!(state_ver).xmrig = Pkg::get_new_pkg_version(Xmrig, &vec4)?,
-                    };
-                    *lock2!(update, prog) += (5.0 / pkg_amount).round();
-                }
-                _ => (),
+            let path = match name {
+                GUPAX_BINARY => lock!(update).path_gupax.clone(),
+                P2POOL_BINARY => lock!(update).path_p2pool.clone(),
+                XMRIG_BINARY => lock!(update).path_xmrig.clone(),
+                _ => continue,
+            };
+            found = true;
+            let path = Path::new(&path);
+            // Unix can replace running binaries no problem (they're loaded into memory)
+            // Windows locks binaries in place, so we must move (rename) current binary
+            // into the temp folder, then move the new binary into the old ones spot.
+            // Clearing the temp folder is now moved at startup instead at the end
+            // of this function due to this behavior, thanks Windows.
+            #[cfg(target_os = "windows")]
+            if path.exists() {
+                let tmp_windows = match name {
+                    GUPAX_BINARY => tmp_dir.clone() + "gupaxx_old.exe",
+                    P2POOL_BINARY => tmp_dir.clone() + "p2pool_old.exe",
+                    XMRIG_BINARY => tmp_dir.clone() + "xmrig_old.exe",
+                    _ => continue,
+                };
+                info!(
+                    "Update | WINDOWS ONLY ... Moving old [{}] -> [{}]",
+                    path.display(),
+                    tmp_windows
+                );
+                std::fs::rename(&path, tmp_windows)?;
             }
+            info!(
+                "Update | Moving new [{}] -> [{}]",
+                entry.path().display(),
+                path.display()
+            );
+            // if bundled, create directory for p2pool and xmrig if not present
+            if lock!(og).gupax.bundled && (name == P2POOL_BINARY || name == XMRIG_BINARY) {
+                std::fs::create_dir_all(
+                    path.parent()
+                        .ok_or_else(|| anyhow!(format!("{} path failed", name)))?,
+                )?;
+            }
+            // Move downloaded path into old path
+            std::fs::rename(entry.path(), path)?;
+            // If we're updating Gupax, set the [Restart] state so that the user knows to restart
+            *lock!(restart) = Restart::Yes;
+            *lock2!(update, prog) += 5.0;
         }
         if !found {
             return Err(anyhow!("Fatal error: Package binary could not be found"));
@@ -875,176 +554,86 @@ impl Update {
 
         let seconds = now.elapsed().as_secs();
         info!("Update | Seconds elapsed ... [{}s]", seconds);
-        match seconds {
-            0 => {
-                *lock2!(update, msg) =
-                    format!("{}! Took 0 seconds... What...?!{}", MSG_SUCCESS, new_pkgs)
-            }
-            1 => {
-                *lock2!(update, msg) = format!("{}! Took 1 second... Wow!{}", MSG_SUCCESS, new_pkgs)
-            }
-            _ => {
-                *lock2!(update, msg) =
-                    format!("{}! Took {} seconds.{}", MSG_SUCCESS, seconds, new_pkgs)
-            }
-        }
+        *lock2!(update, msg) = format!(
+            "Updated from {} to {}\nYou need to restart Gupaxx.",
+            GUPAX_VERSION, version
+        );
         *lock2!(update, prog) = 100.0;
         Ok(())
     }
 }
 
-//---------------------------------------------------------------------------------------------------- Pkg struct/impl
-#[derive(Debug, Clone)]
-pub struct Pkg {
-    name: Name,
-    link_metadata: &'static str,
-    link_prefix: &'static str,
-    link_suffix: &'static str,
-    link_extension: &'static str,
-    bytes: Arc<Mutex<Bytes>>,
-    new_ver: Arc<Mutex<String>>,
+//---------------------------------------------------------------------------------------------------- Pkg functions
+#[cold]
+#[inline(never)]
+// Generate fake [User-Agent] HTTP header
+pub fn get_user_agent() -> &'static str {
+    let index = FAKE_USER_AGENT.len() - 1;
+
+    let rand = thread_rng().gen_range(0..index);
+    let user_agent = FAKE_USER_AGENT[rand];
+    info!("Randomly selected User-Agent ({rand}/{index}) ... {user_agent}");
+    user_agent
 }
 
-impl Pkg {
-    #[cold]
-    #[inline(never)]
-    pub fn new(name: Name) -> Self {
-        let link_metadata = match name {
-            Gupax => GUPAX_METADATA,
-            P2pool => P2POOL_METADATA,
-            Xmrig => XMRIG_METADATA,
-        };
-        let link_prefix = match name {
-            Gupax => GUPAX_PREFIX,
-            P2pool => P2POOL_PREFIX,
-            Xmrig => XMRIG_PREFIX,
-        };
-        let link_suffix = match name {
-            Gupax => GUPAX_SUFFIX,
-            P2pool => P2POOL_SUFFIX,
-            Xmrig => XMRIG_SUFFIX,
-        };
-        let link_extension = match name {
-            Gupax => GUPAX_EXTENSION,
-            P2pool => P2POOL_EXTENSION,
-            Xmrig => XMRIG_EXTENSION,
-        };
-        Self {
-            name,
-            link_metadata,
-            link_prefix,
-            link_suffix,
-            link_extension,
-            bytes: arc_mut!(bytes::Bytes::new()),
-            new_ver: arc_mut!(String::new()),
-        }
-    }
+#[cold]
+#[inline(never)]
+// Generate GET request based off input URI + fake user agent
+fn get_request(
+    client: &Client,
+    link: String,
+    user_agent: &'static str,
+) -> Result<RequestBuilder, anyhow::Error> {
+    Ok(client.get(link).header(USER_AGENT, user_agent))
+}
 
-    //---------------------------------------------------------------------------------------------------- Pkg functions
-    #[cold]
-    #[inline(never)]
-    // Generate fake [User-Agent] HTTP header
-    pub fn get_user_agent() -> &'static str {
-        let index = FAKE_USER_AGENT.len() - 1;
+#[cold]
+#[inline(never)]
+// Get metadata using [Generic hyper::client<C>] & [Request]
+// and change [version, prog] under an Arc<Mutex>
+async fn get_metadata(
+    client: &Client,
+    link: String,
+    user_agent: &'static str,
+) -> Result<String, Error> {
+    let request = get_request(client, link, user_agent)?;
+    let response = request.send().await?;
+    let body = response.json::<TagName>().await?;
+    Ok(body.tag_name)
+}
 
-        let rand = thread_rng().gen_range(0..index);
-        let user_agent = FAKE_USER_AGENT[rand];
-        info!("Randomly selected User-Agent ({rand}/{index}) ... {user_agent}");
-        user_agent
+#[cold]
+#[inline(never)]
+async fn get_bytes(
+    client: &Client,
+    link: String,
+    user_agent: &'static str,
+) -> Result<bytes::Bytes, anyhow::Error> {
+    let request = get_request(client, link, user_agent)?;
+    let mut response = request.send().await?;
+    // GitHub sends a 302 redirect, so we must follow
+    // the [Location] header... only if Reqwest had custom
+    // connectors so I didn't have to manually do this...
+    if response.headers().contains_key(LOCATION) {
+        response = get_request(
+            client,
+            response
+                .headers()
+                .get(LOCATION)
+                .ok_or_else(|| anyhow!("HTTP Location header GET failed"))?
+                .to_str()?
+                .to_string(),
+            user_agent,
+        )?
+        .send()
+        .await?;
     }
-
-    #[cold]
-    #[inline(never)]
-    // Generate GET request based off input URI + fake user agent
-    fn get_request(
-        client: &Client,
-        link: String,
-        user_agent: &'static str,
-    ) -> Result<RequestBuilder, anyhow::Error> {
-        Ok(client.get(link).header(USER_AGENT, user_agent))
-    }
-
-    #[cold]
-    #[inline(never)]
-    // Get metadata using [Generic hyper::client<C>] & [Request]
-    // and change [version, prog] under an Arc<Mutex>
-    async fn get_metadata(
-        new_ver: Arc<Mutex<String>>,
-        client: &Client,
-        link: String,
-        user_agent: &'static str,
-    ) -> Result<(), Error> {
-        let request = Pkg::get_request(client, link, user_agent)?;
-        let response = request.send().await?;
-        dbg!(&response);
-        let body = response.json::<TagName>().await?;
-        *lock!(new_ver) = body.tag_name;
-        Ok(())
-    }
-
-    #[cold]
-    #[inline(never)]
-    // Takes a [Request], fills the appropriate [Pkg]
-    // [bytes] field with the [Archive/Standalone]
-    async fn get_bytes(
-        bytes: Arc<Mutex<bytes::Bytes>>,
-        client: &Client,
-        link: String,
-        user_agent: &'static str,
-    ) -> Result<(), anyhow::Error> {
-        let request = Self::get_request(client, link, user_agent)?;
-        let mut response = request.send().await?;
-        // GitHub sends a 302 redirect, so we must follow
-        // the [Location] header... only if Reqwest had custom
-        // connectors so I didn't have to manually do this...
-        if response.headers().contains_key(LOCATION) {
-            response = Self::get_request(
-                client,
-                response
-                    .headers()
-                    .get(LOCATION)
-                    .ok_or_else(|| anyhow!("HTTP Location header GET failed"))?
-                    .to_str()?
-                    .to_string(),
-                user_agent,
-            )?
-            .send()
-            .await?;
-        }
-        let body = response.bytes().await?;
-        *lock!(bytes) = body;
-        Ok(())
-    }
-
-    #[cold]
-    #[inline(never)]
-    // Take in a [Name] and [Vec] of [Pkg]s, find
-    // that [Name]'s corresponding new version.
-    fn get_new_pkg_version(name: Name, vec: &[&Pkg]) -> Result<String, Error> {
-        for pkg in vec.iter() {
-            if pkg.name == name {
-                return Ok(lock!(pkg.new_ver).to_string());
-            }
-        }
-        Err(anyhow!("Couldn't find new_pkg_version"))
-    }
+    let body = response.bytes().await?;
+    Ok(body)
 }
 
 // This inherits the value of [tag_name] from GitHub's JSON API
 #[derive(Debug, Serialize, Deserialize)]
 struct TagName {
     tag_name: String,
-}
-
-#[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
-pub enum Name {
-    Gupax,
-    P2pool,
-    Xmrig,
-}
-
-impl std::fmt::Display for Name {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
 }

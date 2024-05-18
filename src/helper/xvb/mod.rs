@@ -361,10 +361,11 @@ impl Helper {
     }
 }
 //---------------------------------------------------------------------------------------------------- Public XvB API
+
 #[derive(Debug, Clone, Default)]
 pub struct PubXvbApi {
     pub output: String,
-    pub uptime: u64,
+    pub _uptime: u64,
     pub xvb_sent_last_hour_samples: SamplesAverageHour,
     pub p2pool_sent_last_hour_samples: SamplesAverageHour,
     pub stats_pub: XvbPubStats,

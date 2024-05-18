@@ -29,3 +29,14 @@ Status of process for Xmrig use for some information an image of data when the p
 The node of xmrig in upstream can not change without a restart of the process.In this fork, the node used by xmrig needs to be updated without restart (using the config HTTP API of xmrig).
 So Gupaxx need to refresh the value of status tab submenu process for xmrig where before the values could not change without a restart of the process.
 The field node from ImgXmrig needs to be moved to PubXvbApi. This value must be updated by xmrig at start and by XvB process at runtime.
+
+## Updates
+
+A new option in Gupaxx tab advanced will enable bundled updates.
+The binary included of gupaxx will have default value for bundled updates depending if it is coming from standalone or bundle release.
+
+Updates from Gupaxx will do the following differently from upstream:
+- check if using bundled or standalone with state. Update only Gupaxx binary if the latter or xmrig and p2pool from bundle version if the former.
+- prevent user to run updates twice without restart.
+- ask the user to restart Gupaxx
+- do not verify if file p2pool or xmrig exist. (so that the update can create them).

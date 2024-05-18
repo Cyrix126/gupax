@@ -49,7 +49,7 @@ impl Gupax {
                 ui.add_sized([width, button], Button::new("Updates are disabled"))
                     .on_disabled_hover_text(DISTRO_NO_UPDATE);
                 #[cfg(not(feature = "distro"))]
-                ui.set_enabled(!updating);
+                ui.set_enabled(!updating && *lock!(restart) == Restart::No);
                 #[cfg(not(feature = "distro"))]
                 if ui
                     .add_sized([width, button], Button::new("Check for updates"))
@@ -78,7 +78,7 @@ impl Gupax {
         debug!("Gupaxx Tab | Rendering bool buttons");
         ui.horizontal(|ui| {
             ui.group(|ui| {
-                let width = (size.x - SPACE * 12.0) / 6.0;
+                let width = (size.x - SPACE * 15.0) / 7.0;
                 let height = if self.simple {
                     size.y / 10.0
                 } else {
@@ -88,6 +88,9 @@ impl Gupax {
                 ui.style_mut().override_text_style = Some(egui::TextStyle::Small);
                 ui.add_sized(size, Checkbox::new(&mut self.auto_update, "Auto-Update"))
                     .on_hover_text(GUPAX_AUTO_UPDATE);
+                ui.separator();
+                ui.add_sized(size, Checkbox::new(&mut self.bundled, "Bundle"))
+                    .on_hover_text(GUPAX_BUNDLED_UPDATE);
                 ui.separator();
                 ui.add_sized(size, Checkbox::new(&mut self.auto_p2pool, "Auto-P2Pool"))
                     .on_hover_text(GUPAX_AUTO_P2POOL);
@@ -100,13 +103,13 @@ impl Gupax {
                 ui.separator();
                 ui.add_sized(
                     size,
-                    Checkbox::new(&mut self.ask_before_quit, "Ask before quit"),
+                    Checkbox::new(&mut self.ask_before_quit, "Confirm quit"),
                 )
                 .on_hover_text(GUPAX_ASK_BEFORE_QUIT);
                 ui.separator();
                 ui.add_sized(
                     size,
-                    Checkbox::new(&mut self.save_before_quit, "Save before quit"),
+                    Checkbox::new(&mut self.save_before_quit, "Save on quit"),
                 )
                 .on_hover_text(GUPAX_SAVE_BEFORE_QUIT);
             });

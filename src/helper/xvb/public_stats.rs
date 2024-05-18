@@ -17,6 +17,7 @@ use crate::{
 
 use super::{rounds::XvbRound, PubXvbApi};
 
+#[allow(dead_code)] // because deserialize doesn't use all the fields
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct XvbPubStats {
     pub time_remain: u32, // remaining time of round in minutes

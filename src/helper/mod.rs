@@ -125,6 +125,7 @@ impl Default for Sys {
 //---------------------------------------------------------------------------------------------------- [Process] Struct
 // This holds all the state of a (child) process.
 // The main GUI thread will use this to display console text, online state, etc.
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct Process {
     pub name: ProcessName,     // P2Pool or XMRig?

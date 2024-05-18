@@ -15,13 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use crate::components::update::Pkg;
+use crate::components::update::get_user_agent;
 use crate::{constants::*, macros::*};
 use egui::Color32;
 use log::*;
 use rand::{thread_rng, Rng};
 use reqwest::{Client, RequestBuilder};
-
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -68,7 +67,7 @@ const REMOTE_NODE_MAX_CHARS: usize = {
     assert!(len != 0);
     len
 };
-
+#[allow(dead_code)]
 pub struct RemoteNode {
     pub ip: &'static str,
     pub location: &'static str,
@@ -279,6 +278,7 @@ impl NodeData {
 //
 // This struct leaves out most fields on purpose,
 // we only need a few to verify the node is ok.
+#[allow(dead_code)] // allow dead code because Deserialize doesn't use all the fields in this program
 #[derive(Debug, serde::Deserialize)]
 pub struct GetInfo<'a> {
     pub id: &'a str,
@@ -384,7 +384,7 @@ impl Ping {
         let client = Client::new();
 
         // Random User Agent
-        let rand_user_agent = Pkg::get_user_agent();
+        let rand_user_agent = get_user_agent();
         // Handle vector
         let mut handles = Vec::with_capacity(REMOTE_NODE_LENGTH);
         let node_vec = arc_mut!(Vec::with_capacity(REMOTE_NODE_LENGTH));
@@ -486,8 +486,7 @@ mod test {
     use crate::components::node::{
         format_ip, REMOTE_NODES, REMOTE_NODE_LENGTH, REMOTE_NODE_MAX_CHARS,
     };
-    use crate::components::update::Pkg;
-
+    use crate::components::update::get_user_agent;
     #[test]
     fn validate_node_ips() {
         for (ip, location, rpc, zmq) in REMOTE_NODES {
@@ -524,7 +523,7 @@ mod test {
         let client = Client::new();
 
         // Random User Agent
-        let rand_user_agent = Pkg::get_user_agent();
+        let rand_user_agent = get_user_agent();
 
         // Only fail this test if >50% of nodes fail.
         const HALF_REMOTE_NODES: usize = REMOTE_NODE_LENGTH / 2;

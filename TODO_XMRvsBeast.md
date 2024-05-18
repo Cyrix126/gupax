@@ -54,7 +54,7 @@
   - [x] adapt README for XvB 
     - [x] beta release
     - [x] stable release
-  - [ ] video tutorial to set up XvB Tab
+  - [x] video tutorial to set up XvB Tab
   - [x] adapt doc for new code
   - [x] cargo package metadata
   - [x] pgp signatures

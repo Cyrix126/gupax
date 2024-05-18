@@ -1,7 +1,7 @@
 # cargo-features = ["profile-rustflags"]
 [package]
 name = "gupaxx"
-version = "1.0.0"
+version = "1.1.0"
 authors = ["cyrix126 <gupaxx@baermail.fr>"]
 description = "Fork of Gupax integrating the XMRvsBeast Raffle "
 documentation = "https://github.com/cyrix126/gupaxx"
@@ -25,10 +25,11 @@ incremental = true
 
 [features]
 default = []
+bundle = []
 distro = []
 
 [dependencies]
-anyhow = "1.0.81"
+anyhow = "1.0.85"
 benri = "0.1.12"
 bytes = "1.6.0"
 dirs = "5.0.1"
@@ -48,8 +49,8 @@ egui_extras = { version = "0.27.2", features = ["image"] }
 #--------------------------------------------------------------------------------
 flexi_logger = "0.28.0"
 env_logger = "0.11.3"
-figment = { version = "0.10.15", features = ["toml"] }
-reqwest = {version = "0.12.3", default-features=false, features=["json", "rustls-tls"]}
+figment = { version = "0.10.19", features = ["toml"] }
+reqwest = {version = "0.12.4", default-features=false, features=["json", "rustls-tls"]}
 image = { version = "0.25.1", features = ["png"] }
 log = "0.4.21"
 num-format = { version = "0.4.4", default-features = false }
@@ -58,12 +59,12 @@ portable-pty = "0.8.1"
 rand = "0.8.5"
 regex = { version = "1.10.4", default-features = false, features = ["perf"] }
 rfd = "0.14.1"
-serde = { version = "1.0.197", features = ["rc", "derive"] }
-serde_json = "1.0.115"
-sysinfo = { version = "0.30.8", default-features = false }
+serde = { version = "1.0.202", features = ["rc", "derive"] }
+serde_json = "1.0.117"
+sysinfo = { version = "0.30.12", default-features = false }
 # tls-api = "0.9.0"
 tokio = { version = "1.37.0", features = ["rt", "time", "macros", "process", "rt-multi-thread"] }
-toml = { version = "0.8.12", features = ["preserve_order"] }
+toml = { version = "0.8.13", features = ["preserve_order"] }
 walkdir = "2.5.0"
 zeroize = "1.7.0"
 strsim = "0.11.1"
@@ -71,9 +72,10 @@ strip-ansi-escapes = "0.2.0"
 derive_more = {version="0.99.17", default-features=false, features=["display"]}
 serde-this-or-that = "0.4.2"
 readable = "0.16"
-chrono = {version="0.4.37", default-features=false, features=["clock", "std"]}
+chrono = {version="0.4.38", default-features=false, features=["clock", "std"]}
 enclose = "1.1.8"
 bounded-vec-deque = {version="0.1.1", default-features=false}
+cfg-if = "1.0"
 # Unix dependencies
 [target.'cfg(unix)'.dependencies]
 eframe = { version = "0.27.2", features = ["wgpu"] }
@@ -94,7 +96,7 @@ eframe = { version = "0.27.2", features = ["wgpu"] }
 # openssl = { version = "0.10", features = ["vendored"] }
 # We don't even use `xz` in `flate2` but this gets dynamically
 # linked as well which causes problems, so statically link it.
-lzma-sys = { version = "0.1.20", features = ["static"] }
+lzma-sys = { version = "0.1", features = ["static"] }
 [dev-dependencies]
 egui = {version = "0.27.2", features=["callstack"]}
 
@@ -104,8 +106,11 @@ egui = {version = "0.27.2", features=["callstack"]}
 # Windows dependencies
 [target.'cfg(windows)'.dependencies]
 # glow start on windows but not wgpu
-eframe = { version = "0.27.2", features = ["glow"] }
-zip = "0.6.6"
+eframe = { version = "0.27.2", features = ["wgpu"] }
+# need the same version that eframe is using with egui_wgpu
+# feature angle to enable support for old cpu on Windows
+wgpu = {version = "0.19.4", features=["angle"]}
+zip = "1.3.0"
 is_elevated = "0.1.2"
 
 # For Windows build (icon)

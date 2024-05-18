@@ -84,7 +84,7 @@ pub fn init_logger(now: Instant) {
         _ => LevelFilter::Info,
     };
     std::env::set_var("RUST_LOG", format!("off,gupax={}", filter_env));
-    Logger::try_with_str("debug")
+    Logger::try_with_str("info")
         .unwrap()
         .log_to_file(FileSpec::default())
         .start()

@@ -1,3 +1,35 @@
+# v1.1.0
+Stable release, bugfixes and new features.
+
+## Changes
+### UI
+-  Update xmrig and p2pool only if bundle button is checked.
+-  Default value for bundle button depends of bundle or standalone version.
+-  Ask user to restart Gupaxx after updating.
+-  Prevent user to update twice without restart.
+### Internal
+- Bump deps  
+- Update CI to produce different Gupaxx binary for standalone and bundle version.
+- Update tools release to include different default value depending of standalone and bundle version. 
+- Use bundled XMRig and P2Pool of Gupaxx instead of upstream version.
+- Update test
+### Doc
+- Update DIFFERENCES and ARCHITECTURE to reflect updates differences.
+## Fixes
+- fix temporary directories of updates not deleted introduced in fork
+- fix https://github.com/Cyrix126/gupaxx/issues/3  
+- fix https://github.com/Cyrix126/gupaxx/issues/4  
+- fix https://github.com/Cyrix126/gupaxx/issues/5  
+
+## Notes 
+### Do not use built in updates to upgrade to this version
+This update bump the 1.x.0 number, which would mean breaking changes. However, it is only because updating previously from Gupaxx (in =<1.0.0) without manually downloading from github release would upgrade P2Pool and XMRig from upstream, which is a behaviour that has been modified in this release.  
+No configuration file change is needed, just update from github for this release. 
+
+## Bundled Versions
+* [`P2Pool v3.10`](https://github.com/SChernykh/p2pool/releases/tag/v3.10)  
+* [`XMRig v6.21.1`](https://github.com/xmrig/xmrig/releases/tag/v6.21.1)  
+
 # v1.0.0
 Stable release
 

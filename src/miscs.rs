@@ -141,7 +141,7 @@ pub fn get_exe_dir() -> Result<String, std::io::Error> {
 #[cold]
 #[inline(never)]
 pub fn clean_dir() -> Result<(), anyhow::Error> {
-    let regex = Regex::new("^gupax_update_[A-Za-z0-9]{10}$").unwrap();
+    let regex = Regex::new("^gupaxx_update_[A-Za-z0-9]{10}$").unwrap();
     for entry in std::fs::read_dir(get_exe_dir()?)? {
         let entry = entry?;
         if !entry.path().is_dir() {

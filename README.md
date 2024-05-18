@@ -8,6 +8,12 @@ This fork has a stable release. It is intended for end users and offers a friend
 
 Gupaxx is a fork of [**Gupax**](https://github.com/hinto-janai/gupax) integrating the [XMRvsBeast Raffle](https://xmrvsbeast.com), it is also a maintained software. It is made to make in the most easy way possible mining on P2Pool while optionally participating (but you will want to :wink:) in the XMRvsBeast raffle.  
 
+## System requirements
+
+Gupax may not run on machines with:
+- a deprecated OS (Windows 7, Ubuntu 18.04, etc)
+- CPU whithout support for OpenGL 3.1 (<2010)
+
 [![CI](https://github.com/cyrix126/gupaxx/actions/workflows/ci.yml/badge.svg)](https://github.com/cyrix126/gupaxx/actions/workflows/ci.yml)
 
 ## Contents

@@ -30,75 +30,76 @@ cd skel; check "CD into skel"
 # and that the naming schemes are correct
 title "Linux folder check"
 [[ -f linux/gupaxx ]]; check "linux/gupaxx"
-[[ -f linux/p2pool/p2pool ]]; check "linux/p2pool/p2pool"
-[[ -f linux/xmrig/xmrig ]]; check "linux/xmrig/xmrig"
+[[ -f linux_b/gupaxx ]]; check "linux_b/gupaxx"
+[[ -f linux_b/p2pool/p2pool ]]; check "linux_b/p2pool/p2pool"
+[[ -f linux_b/xmrig/xmrig ]]; check "linux_b/xmrig/xmrig"
 title "macOS-x64 folder check"
 [[ -d macos-x64/Gupaxx.app ]]; check "macos-x64/Gupaxx.app"
-[[ -f macos-x64/Gupaxx.app/Contents/MacOS/p2pool/p2pool ]]; check "macos-x64/p2pool/p2pool"
-[[ -f macos-x64/Gupaxx.app/Contents/MacOS/xmrig/xmrig ]]; check "macos-x64/xmrig/xmrig"
+[[ -d macos-x64_b/Gupaxx.app ]]; check "macos-x64_b/Gupaxx.app"
+[[ -f macos-x64_b/Gupaxx.app/Contents/MacOS/p2pool/p2pool ]]; check "macos-x64_b/p2pool/p2pool"
+[[ -f macos-x64_b/Gupaxx.app/Contents/MacOS/xmrig/xmrig ]]; check "macos-x64_b/xmrig/xmrig"
 title "macOS-arm64 folder check"
 [[ -d macos-arm64/Gupaxx.app ]]; check "macos-arm64/Gupaxx.app"
-[[ -f macos-arm64/Gupaxx.app/Contents/MacOS/p2pool/p2pool ]]; check "macos-arm64/p2pool/p2pool"
-[[ -f macos-arm64/Gupaxx.app/Contents/MacOS/xmrig/xmrig ]]; check "macos-arm64/xmrig/xmrig"
+[[ -d macos-arm64_b/Gupaxx.app ]]; check "macos-arm64_b/Gupaxx.app"
+[[ -f macos-arm64_b/Gupaxx.app/Contents/MacOS/p2pool/p2pool ]]; check "macos-arm64_b/p2pool/p2pool"
+[[ -f macos-arm64_b/Gupaxx.app/Contents/MacOS/xmrig/xmrig ]]; check "macos-arm64_b/xmrig/xmrig"
 title "Windows folder check"
 [[ -f windows/Gupaxx.exe ]]; check "windows/Gupaxx.exe"
-[[ -f windows/P2Pool/p2pool.exe ]]; check "windows/P2Pool/p2pool.exe"
-[[ -f windows/XMRig/xmrig.exe ]]; check "windows/XMRig/xmrig.exe"
+[[ -f windows_b/Gupaxx.exe ]]; check "windows_b/Gupaxx.exe"
+[[ -f windows_b/P2Pool/p2pool.exe ]]; check "windows_b/P2Pool/p2pool.exe"
+[[ -f windows_b/XMRig/xmrig.exe ]]; check "windows_b/XMRig/xmrig.exe"
 
 
 # Tar Linux Bundle
 title "Tar Linux"
 # give execution permission
 chmod +x linux/gupaxx
-chmod +x linux/p2pool/p2pool
-chmod +x linux/xmrig/xmrig
-mv linux "gupaxx-$NEW_VER-linux-x64-bundle"; check "linux -> gupaxx-$NEW_VER-linux-x64-bundle"
+chmod +x linux_b/gupaxx
+chmod +x linux_b/p2pool/p2pool
+chmod +x linux_b/xmrig/xmrig
+mv linux_b "gupaxx-$NEW_VER-linux-x64-bundle"; check "linux -> gupaxx-$NEW_VER-linux-x64-bundle"
 tar -czpf "gupaxx-${NEW_VER}-linux-x64-bundle.tar.gz" "gupaxx-$NEW_VER-linux-x64-bundle" --owner=lm --group=lm ; check "tar linux-bundle"
 # Tar Linux Standalone
-mv "gupaxx-$NEW_VER-linux-x64-bundle" "gupaxx-$NEW_VER-linux-x64-standalone"; check "gupaxx-$NEW_VER-linux-x64-bundle -> gupaxx-$NEW_VER-linux-x64-standalone"
-rm -r "gupaxx-$NEW_VER-linux-x64-standalone/p2pool"; check "rm gupaxx-$NEW_VER-linux-x64-standalone/p2pool"
-rm -r "gupaxx-$NEW_VER-linux-x64-standalone/xmrig"; check "rm gupaxx-$NEW_VER-linux-x64-standalone/xmrig"
+mv linux "gupaxx-$NEW_VER-linux-x64-standalone" 
 tar -czpf "gupaxx-${NEW_VER}-linux-x64-standalone.tar.gz" "gupaxx-$NEW_VER-linux-x64-standalone" --owner=lm --group=lm ; check "tar linux-standalone"
 # Remove dir
 rm -r "gupaxx-$NEW_VER-linux-x64-standalone"; check "rm linux dir"
+rm -r "gupaxx-$NEW_VER-linux-x64-bundle"; check "rm linux_b dir"
 
 # x64
 # Tar macOS Bundle
 title "Tar macOS-x64"
-mv macos-x64 "gupaxx-$NEW_VER-macos-x64-bundle"; check "macos-x64 -> gupaxx-$NEW_VER-macos-x64-bundle"
+mv macos-x64_b "gupaxx-$NEW_VER-macos-x64-bundle"; check "macos-x64_b -> gupaxx-$NEW_VER-macos-x64-bundle"
 tar -czpf "gupaxx-${NEW_VER}-macos-x64-bundle.tar.gz" "gupaxx-$NEW_VER-macos-x64-bundle" --owner=lm --group=lm ; check "tar macos-bundle"
 # Tar macOS Standalone
-mv "gupaxx-$NEW_VER-macos-x64-bundle" "gupaxx-$NEW_VER-macos-x64-standalone"; check "gupaxx-$NEW_VER-macos-x64-bundle -> gupaxx-$NEW_VER-macos-x64-standalone"
-rm -r "gupaxx-$NEW_VER-macos-x64-standalone/Gupaxx.app/Contents/MacOS/p2pool"; check "rm gupaxx-$NEW_VER-macos-x64-standalone/Gupaxx.app/Contents/MacOS/p2pool"
-rm -r "gupaxx-$NEW_VER-macos-x64-standalone/Gupaxx.app/Contents/MacOS/xmrig"; check "rm gupaxx-$NEW_VER-macos-x64-standalone/Gupaxx.app/Contents/MacOS/xmrig/xmrig"
+mv macos-x64 "gupaxx-$NEW_VER-macos-x64-standalone"; check "macos-x64 -> gupaxx-$NEW_VER-macos-x64-standalone"
 tar -czpf "gupaxx-${NEW_VER}-macos-x64-standalone.tar.gz" "gupaxx-$NEW_VER-macos-x64-standalone" --owner=lm --group=lm ; check "tar macos-x64-standalone"
 # Remove dir
 rm -r "gupaxx-$NEW_VER-macos-x64-standalone"; check "rm macos-x64 dir"
+rm -r "gupaxx-$NEW_VER-macos-x64-bundle"; check "rm macos-x64_b dir"
 
 # ARM
 # Tar macOS Bundle
 title "Tar macOS-arm64"
-mv macos-arm64 "gupaxx-$NEW_VER-macos-arm64-bundle"; check "macos-arm64 -> gupaxx-$NEW_VER-macos-arm64-bundle"
-tar -czpf "gupaxx-${NEW_VER}-macos-arm64-bundle.tar.gz" "gupaxx-$NEW_VER-macos-arm64-bundle" --owner=lm --group=lm ; check "tar macos-arm64-bundle"
+mv macos-arm64_b "gupaxx-$NEW_VER-macos-arm64-bundle"; check "macos-arm64_b -> gupaxx-$NEW_VER-macos-arm64-bundle"
+tar -czpf "gupaxx-${NEW_VER}-macos-arm64-bundle.tar.gz" "gupaxx-$NEW_VER-macos-arm64-bundle" --owner=lm --group=lm ; check "tar macos-bundle"
 # Tar macOS Standalone
-mv "gupaxx-$NEW_VER-macos-arm64-bundle" "gupaxx-$NEW_VER-macos-arm64-standalone"; check "gupaxx-$NEW_VER-macos-arm64-bundle -> gupaxx-$NEW_VER-macos-arm64-standalone"
-rm -r "gupaxx-$NEW_VER-macos-arm64-standalone/Gupaxx.app/Contents/MacOS/p2pool"; check "rm gupaxx-$NEW_VER-macos-arm64-standalone/Gupaxx.app/Contents/MacOS/p2pool"
-rm -r "gupaxx-$NEW_VER-macos-arm64-standalone/Gupaxx.app/Contents/MacOS/xmrig"; check "rm gupaxx-$NEW_VER-macos-arm64-standalone/Gupaxx.app/Contents/MacOS/xmrig/xmrig"
+mv macos-arm64 "gupaxx-$NEW_VER-macos-arm64-standalone"; check "macos-arm64 -> gupaxx-$NEW_VER-macos-arm64-standalone"
 tar -czpf "gupaxx-${NEW_VER}-macos-arm64-standalone.tar.gz" "gupaxx-$NEW_VER-macos-arm64-standalone" --owner=lm --group=lm ; check "tar macos-arm64-standalone"
 # Remove dir
-rm -r "gupaxx-$NEW_VER-macos-arm64-standalone"; check "rm macos dir"
+rm -r "gupaxx-$NEW_VER-macos-arm64-standalone"; check "rm macos-arm64 dir"
+rm -r "gupaxx-$NEW_VER-macos-arm64-bundle"; check "rm macos-arm64_b dir"
 
 # Zip Windows Bundle
 title "Zip Windows"
-mv windows "gupaxx-$NEW_VER-windows-x64-bundle"; check "windows -> gupaxx-$NEW_VER-windows-x64-bundle"
+mv windows_b "gupaxx-$NEW_VER-windows-x64-bundle"; check "windows_b -> gupaxx-$NEW_VER-windows-x64-bundle"
 zip -qr "gupaxx-${NEW_VER}-windows-x64-bundle.zip" "gupaxx-$NEW_VER-windows-x64-bundle"; check "zip windows-bundle"
 # Zip Windows Standalone
-mv "gupaxx-$NEW_VER-windows-x64-bundle" "gupaxx-$NEW_VER-windows-x64-standalone"; check "gupaxx-$NEW_VER-windows-x64-bundle -> gupaxx-$NEW_VER-windows-x64-standalone"
-rm -r "gupaxx-$NEW_VER-windows-x64-standalone/P2Pool"; check "rm gupaxx-$NEW_VER-windows-x64-standalone/p2pool"
-rm -r "gupaxx-$NEW_VER-windows-x64-standalone/XMRig"; check "rm gupaxx-$NEW_VER-windows-x64-standalone/xmrig"
+mv windows "gupaxx-$NEW_VER-windows-x64-standalone"; check "windows -> gupaxx-$NEW_VER-windows-x64-standalone"
 zip -qr "gupaxx-${NEW_VER}-windows-x64-standalone.zip" "gupaxx-$NEW_VER-windows-x64-standalone"; check "zip windows-standalone"
 # Remove dir
 rm -r "gupaxx-$NEW_VER-windows-x64-standalone"; check "rm windows dir"
+rm -r "gupaxx-$NEW_VER-windows-x64-bundle"; check "rm windows_b dir"
 
 # SHA256SUMS + Sign
 title "Hash + Sign"

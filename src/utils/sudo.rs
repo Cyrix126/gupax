@@ -35,6 +35,7 @@ use std::{
 };
 use zeroize::Zeroize;
 
+#[allow(dead_code)] // for dummy value windows
 #[derive(Debug, Clone)]
 pub struct SudoState {
     pub windows: bool, // If this bool is set, this struct is just a dummy so I don't have to change my type signatures :)

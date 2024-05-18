@@ -87,12 +87,13 @@ fn main() {
 
     // Run Gupax.
     info!("/*************************************/ Init ... OK /*************************************/");
-    let _ = eframe::run_native(
+    eframe::run_native(
         &app.name_version.clone(),
         options,
         Box::new(move |cc| {
             egui_extras::install_image_loaders(&cc.egui_ctx);
             Box::new(App::cc(cc, resolution, app))
         }),
-    );
+    )
+    .unwrap();
 }

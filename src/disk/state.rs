@@ -191,6 +191,7 @@ pub struct Gupax {
     pub selected_scale: f32,
     pub tab: Tab,
     pub ratio: Ratio,
+    pub bundled: bool,
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Deserialize, Serialize)]
@@ -288,6 +289,10 @@ impl Default for Gupax {
             selected_scale: APP_DEFAULT_SCALE,
             ratio: Ratio::Width,
             tab: Tab::Xvb,
+            #[cfg(feature = "bundle")]
+            bundled: true,
+            #[cfg(not(feature = "bundle"))]
+            bundled: false,
         }
     }
 }

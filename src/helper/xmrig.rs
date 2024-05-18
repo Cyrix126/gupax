@@ -666,6 +666,7 @@ impl ImgXmrig {
 }
 
 //---------------------------------------------------------------------------------------------------- Public XMRig API
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct PubXmrigApi {
     pub output: String,

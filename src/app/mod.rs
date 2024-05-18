@@ -60,6 +60,7 @@ pub mod resize;
 // The state of the outer main [App].
 // See the [State] struct in [state.rs] for the
 // actual inner state of the tab settings.
+#[allow(dead_code)]
 pub struct App {
     // Misc state
     pub tab: Tab,   // What tab are we on?
