@@ -54,8 +54,8 @@ OR
 #### Watch Stratum Data instead of estimate.
 Right now, the algorithm estimate the eHR with the estimation made by the p2pool instance which is calculating from passed shares.
 The algorithm could instead watch the stats from the stratum server, which is exact but would take into account only miners which are pointed to it.
-Miners using the cli xmrig could point their miners to the p2pool instance of Gupaxx, or have an indentical option if they are using the CLI of the algorithm.
-The algorithm would still check the estimation made by the p2pool instane of Gupaxx and warn the user if it seems there is too much difference between the data of the stratum server and the one of p2pool. It could prevent the user to forget to configure a miner to the stratum p2pool.
+Miners using the cli xmrig could point their miners to the p2pool instance of Gupaxx, or have an identical option if they are using the CLI of the algorithm.
+The algorithm would still check the estimation made by the p2pool instance of Gupaxx and warn the user if it seems there is too much difference between the data of the stratum server and the one of p2pool. It could prevent the user to forget to configure a miner to the stratum p2pool.
 
 
 ## Trust-less
