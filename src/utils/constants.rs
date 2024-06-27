@@ -412,6 +412,8 @@ pub const XMRIG_PATH_EMPTY:     &str = "XMRig PATH is empty! To fix: goto the [G
 
 // XvB
 pub const XVB_HELP: &str = "You need to register an account by clicking on the link above to get your token with the same p2pool XMR address you use for payment.";
+pub const XVB_MANUAL_SLIDER_MANUAL_XVB_HELP: &str = "Set the hashrate amount to donate to XvB manually, The remaining hashrate will be sent to p2pool. If the selected hashrate is more than your xmrig hashrate it will be overwritten";
+pub const XVB_MANUAL_SLIDER_MANUAL_P2POOL_HELP: &str = "Set the hashrate amount to keep on p2pool manually, The remaining hasrate will be donated to xvb. If the selected hashrate is more than your xmrig hashrate it will be overwritten ";
 pub const XVB_URL: &str = "https://xmrvsbeast.com";
 
 pub const XVB_URL_PUBLIC_API: &str = "https://xmrvsbeast.com/p2pool/stats";
@@ -439,6 +441,21 @@ pub const XVB_ROUND_DONOR_MIN_HR: u32 = 1000;
 pub const XVB_ROUND_DONOR_VIP_MIN_HR: u32 = 10000;
 pub const XVB_ROUND_DONOR_WHALE_MIN_HR: u32 = 100000;
 pub const XVB_ROUND_DONOR_MEGA_MIN_HR: u32 = 1000000;
+
+// Manual Mode
+pub const XVB_MODE_MANUAL_XVB_HELP: &str = "Manually set the amount to donate to XmrVsBeast, If value is more than xmrig hashrate it might be changed";
+pub const XVB_MODE_MANUAL_P2POOL_HELP: &str = "Manually set the amount to keep on P2pool, If value is more than xmrig hashrate it might be changed";
+pub const XVB_MODE_MANUAL_DONATION_LEVEL_HELP: &str = "Manually set the XvB donation level";
+
+// Manual Donation Levels
+pub const XVB_DONATION_LEVEL_DONOR_HELP: &str =
+    "To qualify at least 1 kH/s will be actively donated (1hr and 24hr avg.)";
+pub const XVB_DONATION_LEVEL_VIP_DONOR_HELP: &str =
+    "To qualify at least 10 kH/s will be actively donated (1hr and 24hr avg.)";
+pub const XVB_DONATION_LEVEL_WHALE_DONOR_HELP: &str =
+    "To qualify at least 100 kH/s will be actively donated (1hr and 24hr avg.)";
+pub const XVB_DONATION_LEVEL_MEGA_DONOR_HELP: &str =
+    "To qualify at least 1000 kH/s will be actively donated (1hr and 24hr avg.)";
 
 // Unknown Data, replace HumanNumlber::unknown()
 pub const UNKNOWN_DATA: &str = "???";

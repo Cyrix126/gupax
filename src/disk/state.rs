@@ -243,10 +243,82 @@ pub struct Xmrig {
     pub token: String,
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, Deserialize, Serialize, Default)]
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub struct Xvb {
+    pub simple: bool,
     pub token: String,
-    pub hero: bool,
+    pub simple_hero_mode: bool,
+    pub mode: XvbMode,
+    pub manual_amount_raw: f64,
+    pub manual_slider_amount: f64,
+    pub manual_donation_level: ManualDonationLevel,
+    pub manual_donation_metric: ManualDonationMetric,
+}
+
+#[derive(Clone, Eq, PartialEq, Debug, Deserialize, Serialize, Default)]
+pub enum XvbMode {
+    #[default]
+    Auto,
+    Hero,
+    ManualXvb,
+    ManualP2pool,
+    ManualDonationLevel,
+}
+
+impl Display for XvbMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let text = match self {
+            Self::Auto => "Auto",
+            Self::Hero => "Hero",
+            Self::ManualXvb => "Manual Xvb",
+            Self::ManualP2pool => "Manual P2pool",
+            Self::ManualDonationLevel => "Manual Donation Level",
+        };
+
+        write!(f, "{}", text)
+    }
+}
+
+#[derive(Clone, Eq, PartialEq, Debug, Deserialize, Serialize, Default)]
+pub enum ManualDonationLevel {
+    #[default]
+    Donor,
+    DonorVIP,
+    DonorWhale,
+    DonorMega,
+}
+
+impl Display for ManualDonationLevel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let text = match self {
+            Self::Donor => "Donor",
+            Self::DonorVIP => "Donor VIP",
+            Self::DonorWhale => "Donor Whale",
+            Self::DonorMega => "Donor Mega",
+        };
+
+        write!(f, "{}", text)
+    }
+}
+
+#[derive(Clone, Eq, PartialEq, Debug, Deserialize, Serialize, Default)]
+pub enum ManualDonationMetric {
+    #[default]
+    Hash,
+    Kilo,
+    Mega,
+}
+
+impl Display for ManualDonationMetric {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let text = match self {
+            Self::Hash => "H/s",
+            Self::Kilo => "KH/s",
+            Self::Mega => "MH/s",
+        };
+
+        write!(f, "{}", text)
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -362,6 +434,21 @@ impl Default for Xmrig {
                 .take(16)
                 .map(char::from)
                 .collect(),
+        }
+    }
+}
+
+impl Default for Xvb {
+    fn default() -> Self {
+        Self {
+            simple: true,
+            token: String::with_capacity(9),
+            simple_hero_mode: Default::default(),
+            mode: Default::default(),
+            manual_amount_raw: Default::default(),
+            manual_slider_amount: Default::default(),
+            manual_donation_level: Default::default(),
+            manual_donation_metric: Default::default(),
         }
     }
 }

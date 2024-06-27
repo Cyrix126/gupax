@@ -116,7 +116,7 @@ impl XvbNode {
                 gui_api_xvb,
                 &format!("XvB node ping, {} is selected as the fastest.", node),
             );
-            info!("ProcessState to Syncing after finding joignable node");
+            info!("ProcessState to Syncing after finding joinable node");
             // could be used by xmrig who signal that a node is not joignable
             // or by the start of xvb
             // next iteration of the loop of XvB process will verify if all conditions are met to be alive.

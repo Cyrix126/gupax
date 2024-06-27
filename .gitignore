@@ -1,3 +1,4 @@
 /target
 /feature
 .DS_Store
+rustc-ice-*

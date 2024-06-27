@@ -112,14 +112,17 @@ impl crate::app::App {
                                 wants_input,
                             );
                         }
-                        Tab::Xvb => self.xvb_run_actions(
-                            ui,
-                            height,
-                            xvb_is_waiting,
-                            xvb_is_alive,
-                            key,
-                            wants_input,
-                        ),
+                        Tab::Xvb => {
+                            self.xvb_submenu(ui, size);
+                            self.xvb_run_actions(
+                                ui,
+                                height,
+                                xvb_is_waiting,
+                                xvb_is_alive,
+                                key,
+                                wants_input,
+                            );
+                        }
                         Tab::About => {}
                     }
                 });
@@ -504,6 +507,29 @@ impl crate::app::App {
                         self.error_state.ask_sudo(&self.sudo);
                     }
                 }
+            }
+        });
+    }
+
+    fn xvb_submenu(&mut self, ui: &mut Ui, size: Vec2) {
+        ui.group(|ui| {
+            let width = size.x / 1.5;
+            let size = vec2(width, size.y);
+            if ui
+                .add_sized(
+                    size,
+                    SelectableLabel::new(!self.state.xvb.simple, "Advanced"),
+                )
+                .clicked()
+            {
+                self.state.xvb.simple = false;
+            }
+            ui.separator();
+            if ui
+                .add_sized(size, SelectableLabel::new(self.state.xvb.simple, "Simple"))
+                .clicked()
+            {
+                self.state.xvb.simple = true;
             }
         });
     }

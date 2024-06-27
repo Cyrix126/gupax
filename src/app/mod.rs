@@ -526,8 +526,10 @@ impl App {
         app.tab = app.state.gupax.tab;
 
         // Set saved Hero mode to runtime.
-        app.xvb_api.lock().unwrap().stats_priv.runtime_hero_mode = app.state.xvb.hero;
-
+        debug!("Setting runtime_mode & runtime_manual_amount");
+        app.xvb_api.lock().unwrap().stats_priv.runtime_mode = app.state.xvb.mode.clone().into();
+        app.xvb_api.lock().unwrap().stats_priv.runtime_manual_amount =
+            app.state.xvb.manual_amount_raw;
         // Check if [P2pool.node] exists
         info!("App Init | Checking if saved remote node still exists...");
         app.state.p2pool.node = RemoteNode::check_exists(&app.state.p2pool.node);

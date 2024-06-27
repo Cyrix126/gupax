@@ -10,12 +10,47 @@ use serde::Deserialize;
 use tokio::time::sleep;
 
 use crate::{
+    disk::state::ManualDonationLevel,
     helper::{xvb::output_console, Process, ProcessState},
     macros::lock,
     XVB_URL,
 };
+use crate::{
+    disk::state::XvbMode, XVB_ROUND_DONOR_MEGA_MIN_HR, XVB_ROUND_DONOR_MIN_HR,
+    XVB_ROUND_DONOR_VIP_MIN_HR, XVB_ROUND_DONOR_WHALE_MIN_HR,
+};
 
 use super::{nodes::XvbNode, rounds::XvbRound, PubXvbApi};
+
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq, Default)]
+pub enum RuntimeMode {
+    #[default]
+    Auto,
+    ManualXvb,
+    ManualP2pool,
+    Hero,
+    ManualDonationLevel,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq, Default)]
+pub enum RuntimeDonationLevel {
+    #[default]
+    Donor,
+    DonorVIP,
+    DonorWhale,
+    DonorMega,
+}
+
+impl RuntimeDonationLevel {
+    pub fn get_hashrate(&self) -> f32 {
+        match &self {
+            Self::Donor => XVB_ROUND_DONOR_MIN_HR as f32,
+            Self::DonorVIP => XVB_ROUND_DONOR_VIP_MIN_HR as f32,
+            Self::DonorWhale => XVB_ROUND_DONOR_WHALE_MIN_HR as f32,
+            Self::DonorMega => XVB_ROUND_DONOR_MEGA_MIN_HR as f32,
+        }
+    }
+}
 
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct XvbPrivStats {
@@ -36,7 +71,11 @@ pub struct XvbPrivStats {
     pub msg_indicator: String,
     #[serde(skip)]
     // so the hero mode can change between two decision of algorithm without restarting XvB.
-    pub runtime_hero_mode: bool,
+    pub runtime_mode: RuntimeMode,
+    #[serde(skip)]
+    pub runtime_manual_amount: f64,
+    #[serde(skip)]
+    pub runtime_manual_donation_level: RuntimeDonationLevel,
 }
 
 impl XvbPrivStats {
@@ -103,6 +142,29 @@ impl XvbPrivStats {
                 );
                 sleep(Duration::from_secs(10)).await;
             }
+        }
+    }
+}
+
+impl From<XvbMode> for RuntimeMode {
+    fn from(mode: XvbMode) -> Self {
+        match mode {
+            XvbMode::Auto => Self::Auto,
+            XvbMode::ManualXvb => Self::ManualXvb,
+            XvbMode::ManualP2pool => Self::ManualP2pool,
+            XvbMode::Hero => Self::Hero,
+            XvbMode::ManualDonationLevel => Self::ManualDonationLevel,
+        }
+    }
+}
+
+impl From<ManualDonationLevel> for RuntimeDonationLevel {
+    fn from(level: ManualDonationLevel) -> Self {
+        match level {
+            ManualDonationLevel::Donor => RuntimeDonationLevel::Donor,
+            ManualDonationLevel::DonorVIP => RuntimeDonationLevel::DonorVIP,
+            ManualDonationLevel::DonorWhale => RuntimeDonationLevel::DonorWhale,
+            ManualDonationLevel::DonorMega => RuntimeDonationLevel::DonorMega,
         }
     }
 }
